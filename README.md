@@ -26,7 +26,7 @@ Because it's too early to hunt for bugs if the decisions are wrong and have to b
 
 ## What's the result?
 
-Here's an example of a real run on a two-year-old mobile app brought back to life in one PR (names changed, two of five pieces shown):
+Here's an example of a real run on a two-year-old mobile app brought back to life in one PR:
 
 ```
 # Reverse grill: feat/web-1.0.17
@@ -56,12 +56,14 @@ On web the app calls `core-api.` and `plan-api.` versions of each environment's 
 **Problem:** no environment has such hosts, and the next step is DNS and certificates per customer to satisfy a client-side naming rule; the infra convention is `api.<env>.<product>` and the core server has CORS disabled anyway.
 - **Recommended:** same-origin API on web - the web ingress already proxies the core paths, add the planning path per environment and skip the environment lookup on web. (lib/screen/loginScreen.dart:62-71; infra repo, web ingress)
 - **Current:** host rewrite kept from before, listed in the PR as a known blocker.
+- **Keep current if:** every customer environment is going to get the two extra API hostnames with DNS and certificates anyway; otherwise same-origin through the ingress that already proxies, one path per environment, nothing built per customer.
 
 🟡 **Signing key in build**
 The Android signing keystore and both native trees are copied into the image build stage.
 **Problem:** the keystore is tracked in git twice and ends up in build layers and the CI cache; the web build never reads it.
 - **Recommended:** exclude the keystore, the certificate folder, android/ and ios/ from the build context and drop the delete step. (.dockerignore:1-10, Dockerfile:6-9)
 - **Current:** only tooling folders excluded; native trees copied then deleted.
+- **Keep current if:** the image registry and CI cache are private and stay that way; otherwise ten lines of exclusions, no behaviour change.
 
 🟢 **Pinned build image** - exact Flutter 3.41.9 from a third-party registry; the old image stopped updating and the project already pins that floor. (Dockerfile:2)
 
@@ -83,18 +85,21 @@ The lock accepts only a fingerprint or face; there is no device PIN fallback.
 **Problem:** the rugged scanners rarely have enrolled biometrics, so on the shift hardware the lock means no persistent session at all; once staff are trained to re-login daily, that becomes the operating posture. The fallback branch in the code is dead: both paths ask for biometrics only.
 - **Recommended:** allow the device PIN or pattern as fallback. (lib/src/authBio.dart:48,67)
 - **Current:** biometric only; failure or no biometrics = signed out.
+- **Keep current if:** every device that keeps a session has an enrolled fingerprint or face; otherwise PIN fallback, two lines, before staff get trained to re-login daily.
 
 🟡 **Lock at app start only**
 The check runs when the app starts cold, never when it comes back from the background.
 **Problem:** a shared device handed over mid-shift stays open for hours, which is the case a session lock exists for.
 - **Recommended:** re-lock on return from background after a grace period, using the lifecycle hook the app already has for data refresh. (lib/main.dart:74-78)
 - **Current:** cold start only.
+- **Keep current if:** devices are never handed over mid-shift; otherwise one lifecycle hook the app already has, plus a grace period to pick.
 
 🟡 **Never-asked treated as failed**
 A person who has never been asked for biometrics is signed out at app start.
 **Problem:** every existing install is signed out once on first launch of this version, with no warning to operators.
 - **Recommended:** never asked -> ask now; explicitly failed -> sign out. (lib/main.dart:82-85)
 - **Current:** missing answer counts as failed.
+- **Keep current if:** one forced re-login of every install at upgrade is acceptable and announced; otherwise one branch, and the upgrade stays silent.
 
 **Conclusion:** rethink before this version reaches the scanner fleet; a fingerprint-only lock leaves scanners without a persistent session. Then: re-lock on resume, never-asked handling.
 

@@ -106,7 +106,7 @@ Two blocks, printed once each, before any reviewer starts:
 - Block A, after Step 1, four lines: target and base; commits and files (+a/-b); `Skipped: lockfiles <n> lines, generated <n> files, vendored <n>, formatting-only <n>`; what was not available (PR text, ticket, docs).
 - Block B, after Step 3: the PM paragraph with no heading above it; the piece index with the reviewed-decision count per piece; `Experts: <niche> -> pieces <n> (<parallel | in turn>)`; `Reviewing... packets at <scratch path>`.
 
-The final report starts at the piece sections and names Block B as its summary; neither block is reprinted. Between later stages, one status line at most.
+Block A is never reprinted. The final report opens with the PM paragraph and the piece index again (final numbering, level circles), because text printed between tool calls may never reach the reader; the Experts and Reviewing lines are not reprinted. Between later stages, one status line at most.
 
 PM summary shape (Block B and the ADR Summary). Written for a non-technical reader in plain, full sentences; never in a terse or compressed register, even when the session uses one for everything else. No product description, no version numbers, no tool or library names, no evidence labels ("stated", "unrecorded"), no parenthetical tags. Merge state, PR number, excluded files and reviewer count live in the ADR header only. Shape:
 
@@ -233,6 +233,11 @@ Shape:
 
 **Target:** <branch|PR|range|uncommitted> vs <base>, <n> commits, <n> files (+a/-b)
 
+<the PM paragraph>
+
+1. 🟡 <Piece name (tag)> - <outcome>
+2. ...
+
 ---
 
 ## 1. <Piece name (tag)>
@@ -246,6 +251,7 @@ Shape:
 **Problem:** <what accumulates after merge, and for whom>
 - **Recommended:** <the better option and where it lives> (<file:line>)
 - **Current:** <what was built, in a few plain words>
+- **Keep current if:** <the assumption under which current is fine; then "otherwise" and what recommended costs, one line>
 
 🟡 **<Mini header>**
 <what is now true and what was before, one plain sentence>
@@ -253,6 +259,7 @@ Shape:
 - **Recommended:** <the better option and where it lives> (<file:line>)
 - **Alternative:** <a second option, only when it earned its place; see rules>
 - **Current:** <what was built, in a few plain words>
+- **Keep current if:** <the assumption under which current is fine; then "otherwise" and what recommended costs, one line>
 
 🟡 **<Mini header>** (a split: experts disagree, evidence cannot settle it)
 <what is now true and what was before, one plain sentence>
@@ -260,6 +267,7 @@ Shape:
 - **Recommended:** current approach, because <position A, one clause>
 - **Alternative:** <the reversing option>, because <position B, one clause> (<file:line>)
 - **Current:** <what was built, in a few plain words>
+- **Keep current if:** <the assumption under which the endorsing side wins; otherwise the reversing side, one line>
 
 🟢 **<Mini header>** - <what was chosen and why it is fine, one plain sentence> (<file:line>)
 - **Alternative:** <a verified option worth considering, only when one exists>
@@ -283,15 +291,16 @@ Shape:
 
 Rules for the chat digest:
 
-- Three levels, shown as a coloured circle prefixed to the decision's mini header: 🔴 rethink (verified accumulation after merge), 🟡 worth changing (a verified differ stands, or a split), 🟢 OK (endorsed). Section headings carry no marker; each index line in Block B is prefixed with the worst level in its piece.
+- Three levels, shown as a coloured circle prefixed to the decision's mini header: 🔴 rethink (verified accumulation after merge), 🟡 worth changing (a verified differ stands, or a split), 🟢 OK (endorsed). Section headings carry no marker; each index line in the digest opening and the ADR Summary is prefixed with the worst level in its piece. Block B's index carries no level, since review has not run yet.
 - 🟢 decisions are one line each (header, then what was chosen and why it is fine), listed only when a user, operator or store would notice them (device floors, install requirements, what people see or must do); endorsed internal choices (build patching, library swaps, error wiring) stay in the ADR. An Alternative sub-bullet is added only when one earned its place.
 - Every piece keeps the five parts in this order: What, Decisions, Conclusion, Questions, Noticed. Omit Questions or Noticed only when empty, never merge them across pieces. Omit "Outside this change" when empty.
 - Conclusion is one line in plain words: the outcome first ("fine to ship" or "rethink before ..."), then the follow-ups introduced by "Fix:" (ship) or "Then:" (rethink). Cap-cut and unjudged decisions are not mentioned in chat; the ADR's "Also chosen" holds them.
 - Decisions are not bulleted. Each is a block separated from the next by a blank line: a bold mini header of two to four plain words naming the subject ("Android version bump", "Copied NFC plugin code", "Firebase version pins") on its own line prefixed by its level circle, then one plain sentence saying what is now true and what was before ("The app now needs Android 8.0 or newer; before it ran on Android 5.0."). A split is a 🟡 block whose Recommended and Alternative carry the two sides with their reasons; an unjudged decision gets no block. The sentence is in the same register as the PM summary: no code names, no version strings unless they are the decision itself. Problem is one line. Switching costs and OK reasoning stay in the ADR.
 - Recommended is always present and always one option: the better option for change and rethink, "current approach" when the expert endorses what was built. It ends with the pointer.
-- Current is always the last sub-bullet: what was actually built, in a few plain words, so the reader who has just read Recommended and Alternative does not have to scroll back to the opening sentence.
+- Current follows Recommended and Alternative: what was actually built, in a few plain words, so the reader who has just read them does not have to scroll back to the opening sentence.
+- "Keep current if:" is always the last sub-bullet on every 🔴 and 🟡 block: one line that lets the reader decide without the ADR. It opens with the assumption under which current is fine, then "otherwise" and what recommended costs, in plain words ("every producer writes at the same speed; otherwise per-queue, one field, added later without touching the existing key"). On a split it names the assumption under which the endorsing side wins, then the reversing side. It adds no new facts: it draws on Problem, Recommended and the switching costs already in the ADR. Never a restatement of Problem, never a hedge.
 - Alternative is never written to fill the slot. It appears only when a second option survived citation verification, fits this codebase and names where it lives or which existing dependency it uses, differs materially from Recommended, and is not a rewrite or a style choice. Most decisions have none. An OK decision gets its own block only when such an Alternative exists; otherwise it stays on the collapsed OK line.
 - Sections are separated by a horizontal rule. Bullets are one idea each. No tables.
-- The digest never reprints Block B, the Approach, or OK reasoning; the ADR path is where the reader goes for those.
+- The digest never reprints Block A, the Experts or Reviewing lines, the Approach, or OK reasoning; the ADR path is where the reader goes for those.
 
 Offer the save once, in one line, in the Files section, no follow-up. On a yes, save one ADR per piece to `docs/adr/NNNN-<slug>.md` at the next free numbers: header scoped to that piece, its Summary reduced to its own line, cross-piece pointers rewritten as links to the sibling ADR filenames, review parts left out. An adopted expert alternative is a new decision with its own ADR; changing a decision the experts would reverse is a new task with its own review and commit.
