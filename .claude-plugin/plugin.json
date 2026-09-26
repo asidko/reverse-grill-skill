@@ -1,0 +1,12 @@
+{
+  "name": "reverse-grill",
+  "description": "Explain the design decisions behind existing code well enough that even a PM can judge them without looking at the code. After-the-fact ADR for a PR, branch or commit range, every decision graded by niche expert reviewers.",
+  "version": "1.0.0",
+  "author": {
+    "name": "asidko",
+    "url": "https://github.com/asidko"
+  },
+  "homepage": "https://github.com/asidko/reverse-grill-skill",
+  "license": "Unlicense",
+  "keywords": ["skill", "adr", "architecture-decision-records", "code-review", "design-review", "claude", "codex"]
+}
