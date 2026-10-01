@@ -51,19 +51,32 @@ Three things to rethink before this goes further: how the web build reaches the 
 
 **Decisions:**
 
-🔴 **Web API host contract**
-On web the app calls `core-api.` and `plan-api.` versions of each environment's hosts; native builds call the hosts directly.
-**Problem:** no environment has such hosts, and the next step is DNS and certificates per customer to satisfy a client-side naming rule; the infra convention is `api.<env>.<product>` and the core server has CORS disabled anyway.
-- **Recommended:** same-origin API on web - the web ingress already proxies the core paths, add the planning path per environment and skip the environment lookup on web. (lib/screen/loginScreen.dart:62-71; infra repo, web ingress)
-- **Current:** host rewrite kept from before, listed in the PR as a known blocker.
-- **Keep current if:** every customer environment is going to get the two extra API hostnames with DNS and certificates anyway; otherwise same-origin through the ingress that already proxies, one path per environment, nothing built per customer.
+🔴 **Web calls hosts that do not exist**
 
-🟡 **Signing key in build**
-The Android signing keystore and both native trees are copied into the image build stage.
-**Problem:** the keystore is tracked in git twice and ends up in build layers and the CI cache; the web build never reads it.
-- **Recommended:** exclude the keystore, the certificate folder, android/ and ios/ from the build context and drop the delete step. (.dockerignore:1-10, Dockerfile:6-9)
+A user who logs in on web reaches `core-api.` and `plan-api.` versions of their environment's hosts; native builds call the hosts directly.
+
+What goes wrong:
+- No environment has such hosts, so web login fails everywhere today.
+- If the hosts get created, every customer needs its own DNS and certificates for a naming rule only this app uses; the infra convention is `api.<env>.<product>`.
+- Even with the hosts, the core server has CORS disabled, so cross-origin calls still fail.
+
+**Fix:**
+- ↓ **Recommended:** same-origin API on web - the web ingress already proxies the core paths, add the planning path per environment and skip the environment lookup on web. (lib/screen/loginScreen.dart:62-71; infra repo, web ingress)
+- **Current:** host rewrite kept from before, listed in the PR as a known blocker.
+- **Keep current if:** every customer environment is going to get the two extra API hostnames with DNS and certificates anyway. Otherwise same-origin through the ingress that already proxies, one path per environment, nothing built per customer.
+
+🟡 **Signing key shipped into build layers**
+
+The image build copies the Android signing keystore and both native trees, then deletes them.
+
+What goes wrong:
+- The keystore, tracked in git twice, stays in the build layers and the CI cache after the delete.
+- The web build never reads any of it.
+
+**Fix:**
+- ↓ **Recommended:** exclude the keystore, the certificate folder, android/ and ios/ from the build context and drop the delete step. (.dockerignore:1-10, Dockerfile:6-9)
 - **Current:** only tooling folders excluded; native trees copied then deleted.
-- **Keep current if:** the image registry and CI cache are private and stay that way; otherwise ten lines of exclusions, no behaviour change.
+- **Keep current if:** the image registry and CI cache are private and stay that way. Otherwise ten lines of exclusions, no behaviour change.
 
 🟢 **Pinned build image** - exact Flutter 3.41.9 from a third-party registry; the old image stopped updating and the project already pins that floor. (Dockerfile:2)
 
@@ -80,26 +93,45 @@ The Android signing keystore and both native trees are copied into the image bui
 
 **Decisions:**
 
-🔴 **Fingerprint-only lock**
-The lock accepts only a fingerprint or face; there is no device PIN fallback.
-**Problem:** the rugged scanners rarely have enrolled biometrics, so on the shift hardware the lock means no persistent session at all; once staff are trained to re-login daily, that becomes the operating posture. The fallback branch in the code is dead: both paths ask for biometrics only.
-- **Recommended:** allow the device PIN or pattern as fallback. (lib/src/authBio.dart:48,67)
+🔴 **No fallback when there is no fingerprint**
+
+A worker opening the app is asked for a fingerprint or face; there is no device PIN fallback.
+
+What goes wrong:
+- If the device has no enrolled biometrics, as most rugged scanners do not, the worker is signed out at every start: no persistent session on the shift hardware.
+- If biometrics fail, the fallback path asks for biometrics again: both paths ask for biometrics only.
+
+**Fix:**
+- ↑ **Recommended:** allow the device PIN or pattern as fallback. (lib/src/authBio.dart:48,67)
+- ↓ **Alternative:** drop the lock until a customer asks for it, as before this PR; the PR does not mention it. Gives up session protection on shared devices.
 - **Current:** biometric only; failure or no biometrics = signed out.
-- **Keep current if:** every device that keeps a session has an enrolled fingerprint or face; otherwise PIN fallback, two lines, before staff get trained to re-login daily.
+- **Keep current if:** every device that keeps a session has an enrolled fingerprint or face. Otherwise PIN fallback, two lines, before staff get trained to re-login daily.
 
-🟡 **Lock at app start only**
-The check runs when the app starts cold, never when it comes back from the background.
-**Problem:** a shared device handed over mid-shift stays open for hours, which is the case a session lock exists for.
-- **Recommended:** re-lock on return from background after a grace period, using the lifecycle hook the app already has for data refresh. (lib/main.dart:74-78)
+🟡 **Lock skipped on return from background**
+
+The lock appears when the app starts cold, never when a worker comes back to it from the background.
+
+What goes wrong:
+- If a shared device is handed over mid-shift, it stays open for hours, which is the case a session lock exists for.
+
+**Fix:**
+- ↑ **Recommended:** re-lock on return from background after a grace period, using the lifecycle hook the app already has for data refresh. (lib/main.dart:74-78)
+- ↓ **Alternative:** same as above, drop the lock.
 - **Current:** cold start only.
-- **Keep current if:** devices are never handed over mid-shift; otherwise one lifecycle hook the app already has, plus a grace period to pick.
+- **Keep current if:** devices are never handed over mid-shift. Otherwise one lifecycle hook the app already has, plus a grace period to pick.
 
-🟡 **Never-asked treated as failed**
-A person who has never been asked for biometrics is signed out at app start.
-**Problem:** every existing install is signed out once on first launch of this version, with no warning to operators.
-- **Recommended:** never asked -> ask now; explicitly failed -> sign out. (lib/main.dart:82-85)
+🟡 **Every install signed out once at upgrade**
+
+A worker who has never been asked for biometrics is signed out at app start.
+
+What goes wrong:
+- Every existing install has never been asked, so each one is signed out on first launch of this version, with no warning to operators.
+
+**Fix:**
+- ↑ **Recommended:** never asked -> ask now; explicitly failed -> sign out. (lib/main.dart:82-85)
+- ↓ **Alternative:** same as above, drop the lock.
 - **Current:** missing answer counts as failed.
-- **Keep current if:** one forced re-login of every install at upgrade is acceptable and announced; otherwise one branch, and the upgrade stays silent.
+- **Keep current if:** one forced re-login of every install at upgrade is acceptable and announced. Otherwise one branch, and the upgrade stays silent.
 
 **Conclusion:** rethink before this version reaches the scanner fleet; a fingerprint-only lock leaves scanners without a persistent session. Then: re-lock on resume, never-asked handling.
 
@@ -115,6 +147,8 @@ Legend:
 - 🔴 rethink - wrong direction; gets harder to undo the longer it ships.
 - 🟡 worth changing - a better option exists; fix at your pace.
 - 🟢 fine - nothing to do; shown only when users would notice.
+- ↓ simpler than what was built: fewer settings, steps or places to keep in sync. Every 🔴 and 🟡 offers at least one.
+- ↑ more complex than what was built.
 
 ## Install
 
