@@ -20,6 +20,7 @@ Product: an ADR file holding the full reconstruction of a change that already ex
 - Decisions, not code. Everything is stated at the level of the design: what the system trusts, stores, exposes, verifies, owns, defers. Code names, types, idioms and syntax are never the content; a `file:line` is a pointer placed after the plain sentence, never a substitute for it. "The app trusts any server certificate" is a decision; "the callback returns true" is a code detail.
 - One piece, one section. No global "Questions", no global "Noticed", no global decision list. The only things outside the piece sections are the header, the PM summary with its index, "Outside this change", "Files" (chat) and "Experts consulted" (ADR).
 - Product reader first. Each piece opens with what changes for the user, operator or data in plain words before any decision. Domain nouns before code names. One idea per line. No tables anywhere.
+- Compact. Every sentence written for the reader, in chat and in the ADR, is the shortest one that is still clear on first read. Compact is not telegraphic: grammar stays whole, articles and verbs stay. Say each fact once per piece, in the part that owns it. Give each thing one short name at first use and reuse it ("the share", "the operator"); never describe it again. Prefer two short sentences to one joined by a semicolon or "and". Cut words that carry no fact ("in use", "that it belongs to", "rather than", "in order to", "the case where"). Not: "The operator who wants to make share 2 the active one has to edit two separate lists in the server's settings file, and nothing checks that the two of them match." But: "To switch to share 2, the operator edits two lists in the server's settings file. Nothing checks that they match."
 - Budgeted. Every stage below has a read, size or word cap. Over a cap: stop, say what was skipped, continue. Unread evidence never proves that a behaviour or a reason is absent; say "not read" instead.
 - Self-contained. Niche experts are sub-agents of this harness or roles played in turn; no other tool, reviewer or model is consulted.
 - Maintainers: this file names no harness tool, model or vendor; capabilities are described generically. Technology names from the reviewed change are content.
@@ -108,7 +109,7 @@ Two blocks, printed once each, before any reviewer starts:
 
 Block A is never reprinted. The final report opens with the PM paragraph and the piece index again (final numbering, level circles), because text printed between tool calls may never reach the reader; the Experts and Reviewing lines are not reprinted. Between later stages, one status line at most.
 
-PM summary shape (Block B and the ADR Summary). Written for a non-technical reader in plain, full sentences; never in a terse or compressed register, even when the session uses one for everything else. No product description, no version numbers, no tool or library names, no evidence labels ("stated", "unrecorded"), no parenthetical tags. Merge state, PR number, excluded files and reviewer count live in the ADR header only. Shape:
+PM summary shape (Block B and the ADR Summary). Written for a non-technical reader in plain, whole sentences, each as short as it can be and still clear on first read; never telegraphic, even when the session uses a terse register for everything else. At most 45 words before the index. No product description, no version numbers, no tool or library names, no evidence labels ("stated", "unrecorded"), no parenthetical tags. Merge state, PR number, excluded files and reviewer count live in the ADR header only. Shape:
 
 ```
 <App|Service|Library> <the problem in one or two plain sentences: what stopped working or what was missing>. This <PR|change> does <n> separate things:
@@ -117,7 +118,7 @@ PM summary shape (Block B and the ADR Summary). Written for a non-technical read
 2. ...
 ```
 
-A piece line says what a user or operator gets, and flags when it was not announced ("new feature, not mentioned in the PR", "built, not reachable", "unrecorded tweaks"). The piece What lines follow the same register: one plain sentence a PM reads without a glossary.
+A piece line says what a user or operator gets, and flags when it was not announced ("new feature, not mentioned in the PR", "built, not reachable", "unrecorded tweaks"). The piece What lines follow the same register: short plain sentences a PM reads without a glossary.
 
 ## Step 4 - Experts
 
@@ -245,7 +246,7 @@ Shape:
 
 ## 1. <Piece name (tag)>
 
-**What:** <one sentence; now X, was Y; corrected premise folded in>
+**What:** <two short sentences: what happens now, then "Before, ..."; corrected premise folded in>
 
 **Decisions:**
 
@@ -360,6 +361,8 @@ Nothing checks that they match:
 - Current follows Recommended and Alternative: what was actually built, in a few plain words, so the reader who has just read them does not have to scroll back to the opening sentence.
 - "Keep current if:" is always the last sub-bullet on every 🔴 and 🟡 block: one line that lets the reader decide without the ADR. It opens with the assumption under which current is fine, then "Otherwise" and what recommended costs, in plain words ("nobody ever switches shares. Otherwise every site copies this format, and changing it later means editing each site by hand."). On a split it names the assumption under which the endorsing side wins, then the reversing side. It adds no new facts: it draws on the explanation, Recommended and the switching costs already in the ADR. Never a restatement of the explanation, never a hedge.
 - Apart from the required ↓ option, Alternative is never written to fill the slot. It appears only when an option survived citation verification, fits this codebase and names where it lives or which existing dependency it uses, differs materially from Recommended and from the other alternatives, and is not a rewrite or a style choice. Most decisions have none; a block holds at most three, one line each, each saying when it is the better pick ("the simplest if switching is a rare, one-off migration"). An OK decision gets its own block only when such an Alternative exists; otherwise it stays on the collapsed OK line.
+- Word caps, on top of the Compact hard rule (a pointer and "Not tested." do not count): the PM paragraph 45; What 40; a block's opening sentence 20; a consequence bullet 20; each Fix bullet 30; a 🟢 line 30; a Question 20; a Noticed line 15. An excerpt line stays under 56 characters with its trailing comment, so it does not wrap on a phone. These are writing caps, not evidence budgets: over one, a second fact crept in or a word carries nothing, so cut it or move it to the part that owns it; never shorten into fragments, and report nothing as skipped.
+- A Noticed line is the pointer and the bare fact. When a consequence bullet already explains what it means, the line does not explain it again.
 - Sections are separated by a horizontal rule. Bullets are one idea each. No tables.
 - The digest never reprints Block A, the Experts or Reviewing lines, the Approach, or OK reasoning; the ADR path is where the reader goes for those.
 

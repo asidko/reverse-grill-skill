@@ -1,7 +1,7 @@
 {
   "name": "reverse-grill",
   "description": "Explain the design decisions behind existing code well enough that even a PM can judge them without looking at the code. After-the-fact ADR for a PR, branch or commit range, every decision graded by niche expert reviewers.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "asidko",
     "url": "https://github.com/asidko"
